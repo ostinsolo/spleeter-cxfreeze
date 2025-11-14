@@ -66,6 +66,29 @@ spleeter.exe separate -i audio.mp3 -p spleeter:4stems -o output
 ./spleeter separate -i song.mp3 -p spleeter:4stems -c mp3 -b 256k -o output/
 ```
 
+## Models
+
+### SpleeterRT Models (for C implementation)
+
+Download pre-trained models:
+
+```bash
+./download_models.sh
+```
+
+Or manually:
+```bash
+wget https://github.com/ostinsolo/spleeter-cxfreeze/releases/download/models-v1.0.0/spleeterrt-models-v1.0.0.tar.gz
+tar -xzf spleeterrt-models-v1.0.0.tar.gz
+```
+
+### Python Spleeter Models (for frozen app)
+
+Models download automatically to `~/.spleeter/` on first use:
+- `spleeter:2stems` - 45 MB
+- `spleeter:4stems` - 190 MB
+- `spleeter:5stems` - 240 MB
+
 ## Building from Source
 
 ### Prerequisites

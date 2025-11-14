@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Virtual Environments
+venv/
+venv_*/
+ENV/
+env/
+.venv
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# cx_Freeze
+*.pyc
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Project specific
+reference_demucs_cxfreeze/
+spleeter_wrapper.py
+

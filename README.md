@@ -8,6 +8,7 @@ Self-contained [Spleeter](https://github.com/deezer/spleeter) audio source separ
 
 - ✅ **Self-contained**: Bundled Python + TensorFlow + Spleeter - no installation required
 - ✅ **5-stem support with piano**: 2/4/5 stems including piano separation
+- ✅ **Progress reporting**: Explicit progress updates during separation
 - ✅ **No protobuf conflicts**: Pure Python implementation (no C++ freezing issues)
 - ✅ **Fast builds**: 5 minutes (vs 23 minutes with cx_Freeze)
 - ✅ **Smaller size**: 630MB (vs 2.1GB frozen)
@@ -17,11 +18,11 @@ Self-contained [Spleeter](https://github.com/deezer/spleeter) audio source separ
 
 **Pre-built releases** available on the [Releases](https://github.com/ostinsolo/spleeter-cxfreeze/releases) page.
 
-**Recommended**: [v1.1-bundled](https://github.com/ostinsolo/spleeter-cxfreeze/releases/tag/v1.1-bundled) - Working version with bundled Python
+**Latest**: [v1.2-progress](https://github.com/ostinsolo/spleeter-cxfreeze/releases/tag/v1.2-progress) - Progress reporting + performance optimizations
 
 ### Size
 - Bundle: ~630 MB (includes Python + TensorFlow)
-- Compressed: ~630 MB
+- Compressed: ~456 MB
 
 ## Installation
 
@@ -29,7 +30,7 @@ Self-contained [Spleeter](https://github.com/deezer/spleeter) audio source separ
 
 ```bash
 # Download release
-curl -L https://github.com/ostinsolo/spleeter-cxfreeze/releases/download/v1.1-bundled/spleeter-cx-macos-x86_64.tar.gz -o spleeter-cx.tar.gz
+curl -L https://github.com/ostinsolo/spleeter-cxfreeze/releases/download/v1.2-progress/spleeter-cx-macos-v1.2.tar.gz -o spleeter-cx.tar.gz
 
 # Extract
 tar -xzf spleeter-cx.tar.gz

@@ -41,3 +41,5 @@ Thumbs.db
 reference_demucs_cxfreeze/
 spleeter_wrapper.py
 
+*.tar.gz
+spleeter-cx-bundle/

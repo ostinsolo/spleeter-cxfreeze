@@ -30,15 +30,16 @@ This repository provides **two implementations** of Spleeter, each optimized for
 
 **Pre-built releases** available on the [Releases](https://github.com/ostinsolo/spleeter-cxfreeze/releases) page.
 
-**Latest Release**: [v1.5](https://github.com/ostinsolo/spleeter-cxfreeze/releases/tag/v1.5)
+**Latest SpleeterRT Release**: [v1.5](https://github.com/ostinsolo/spleeter-cxfreeze/releases/tag/v1.5)  
+**Latest Spleeter-CX Bundle**: [v1.3-unified](https://github.com/ostinsolo/spleeter-cxfreeze/releases/tag/v1.3-unified)
 
 ### Release Assets
 
 | Asset | Size | Description |
 |-------|------|-------------|
-| `spleeter-cx-macos-v1.3.tar.gz` | 456 MB | Python bundle (2/4/5 stems + piano) |
-| `spleeterrt-macos-v1.5.tar.gz` | 72 KB | C executable (4 stems, ultra-fast) |
-| `spleeterrt-models-v1.5.tar.gz` | 139 MB | Models for SpleeterRT |
+| `spleeter-cx-macos-v1.3.tar.gz` | 456 MB | Python bundle (2/4/5 stems + piano) *(v1.3-unified)* |
+| `spleeterrt-macos-v1.5.tar.gz` | 72 KB | C executable (4 stems, ultra-fast) *(v1.5)* |
+| `spleeterrt-models-v1.5.tar.gz` | 139 MB | Models for SpleeterRT *(v1.5)* |
 
 ---
 

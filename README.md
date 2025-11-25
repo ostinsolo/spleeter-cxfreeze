@@ -30,15 +30,15 @@ This repository provides **two implementations** of Spleeter, each optimized for
 
 **Pre-built releases** available on the [Releases](https://github.com/ostinsolo/spleeter-cxfreeze/releases) page.
 
-**Latest Release**: [v1.3-unified](https://github.com/ostinsolo/spleeter-cxfreeze/releases/tag/v1.3-unified)
+**Latest Release**: [v1.5](https://github.com/ostinsolo/spleeter-cxfreeze/releases/tag/v1.5)
 
 ### Release Assets
 
 | Asset | Size | Description |
 |-------|------|-------------|
 | `spleeter-cx-macos-v1.3.tar.gz` | 456 MB | Python bundle (2/4/5 stems + piano) |
-| `spleeterrt-macos-v1.3.tar.gz` | 72 KB | C executable (4 stems, ultra-fast) |
-| `spleeterrt-models-v1.3.tar.gz` | 139 MB | Models for SpleeterRT |
+| `spleeterrt-macos-v1.5.tar.gz` | 72 KB | C executable (4 stems, ultra-fast) |
+| `spleeterrt-models-v1.5.tar.gz` | 139 MB | Models for SpleeterRT |
 
 ---
 
@@ -65,12 +65,12 @@ cd spleeter-cx
 
 ```bash
 # Download and extract executable
-curl -L https://github.com/ostinsolo/spleeter-cxfreeze/releases/download/v1.3-unified/spleeterrt-macos-v1.3.tar.gz | tar -xz
+curl -L https://github.com/ostinsolo/spleeter-cxfreeze/releases/download/v1.5/spleeterrt-macos-v1.5.tar.gz | tar -xz
 
 # Download and extract models
 mkdir -p ~/Documents/Max\ 9/SplitWizard/ThirdPartyApps/Models/spleeterrt
 cd ~/Documents/Max\ 9/SplitWizard/ThirdPartyApps/Models/spleeterrt
-curl -L https://github.com/ostinsolo/spleeter-cxfreeze/releases/download/v1.3-unified/spleeterrt-models-v1.3.tar.gz | tar -xz
+curl -L https://github.com/ostinsolo/spleeter-cxfreeze/releases/download/v1.5/spleeterrt-models-v1.5.tar.gz | tar -xz
 
 # Run separation (4 stems only)
 cd ~/Documents/Max\ 9/SplitWizard/ThirdPartyApps/spleeterrt

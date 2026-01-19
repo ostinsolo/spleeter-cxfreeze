@@ -25,6 +25,11 @@ jobs:
           # Get libsamplerate paths from homebrew
           SAMPLERATE_PREFIX=$(brew --prefix libsamplerate)
           
+          # Find static library path
+          SAMPLERATE_STATIC="${SAMPLERATE_PREFIX}/lib/libsamplerate.a"
+          echo "Static library: ${SAMPLERATE_STATIC}"
+          ls -la "${SAMPLERATE_STATIC}" || echo "Static lib not found, will try to build from source"
+          
           # Compile all source files with deprecation warning suppression
           clang -O3 -std=c11 -Wall -Wextra -Wno-deprecated-declarations \
             -DACCELERATE_NEW_LAPACK \
@@ -39,11 +44,11 @@ jobs:
           clang -O3 -std=c11 -Wno-deprecated-declarations -DACCELERATE_NEW_LAPACK -c src/gemm.c -o gemm.o -Isrc
           clang -O3 -std=c11 -c src/im2col_dilated.c -o im2col_dilated.o -Isrc
           
-          # Link everything with explicit library path
+          # Link everything with STATIC libsamplerate (no runtime dependency)
           clang -O3 \
             spleeterrt_main.o spleeter.o stftFix.o codelet.o cpthread.o gemm.o im2col_dilated.o \
+            "${SAMPLERATE_STATIC}" \
             -o spleeterrt-offline \
-            -L${SAMPLERATE_PREFIX}/lib -lsamplerate \
             -framework Accelerate \
             -lm -lpthread
           
@@ -53,6 +58,9 @@ jobs:
         run: |
           cd spleeterrt
           file spleeterrt-offline
+          # Check that libsamplerate is NOT a dynamic dependency
+          echo "Checking dynamic dependencies:"
+          otool -L spleeterrt-offline
           ./spleeterrt-offline --help 2>&1 || echo "Help displayed (expected without models)"
       
       - name: Package
@@ -84,6 +92,11 @@ jobs:
           # Get libsamplerate paths from homebrew
           SAMPLERATE_PREFIX=$(brew --prefix libsamplerate)
           
+          # Find static library path
+          SAMPLERATE_STATIC="${SAMPLERATE_PREFIX}/lib/libsamplerate.a"
+          echo "Static library: ${SAMPLERATE_STATIC}"
+          ls -la "${SAMPLERATE_STATIC}" || echo "Static lib not found"
+          
           # Compile all source files with deprecation warning suppression
           clang -O3 -std=c11 -Wall -Wextra -Wno-deprecated-declarations \
             -DACCELERATE_NEW_LAPACK \
@@ -98,11 +111,11 @@ jobs:
           clang -O3 -std=c11 -Wno-deprecated-declarations -DACCELERATE_NEW_LAPACK -c src/gemm.c -o gemm.o -Isrc
           clang -O3 -std=c11 -c src/im2col_dilated.c -o im2col_dilated.o -Isrc
           
-          # Link everything with explicit library path
+          # Link everything with STATIC libsamplerate (no runtime dependency)
           clang -O3 \
             spleeterrt_main.o spleeter.o stftFix.o codelet.o cpthread.o gemm.o im2col_dilated.o \
+            "${SAMPLERATE_STATIC}" \
             -o spleeterrt-offline \
-            -L${SAMPLERATE_PREFIX}/lib -lsamplerate \
             -framework Accelerate \
             -lm -lpthread
           
@@ -112,6 +125,9 @@ jobs:
         run: |
           cd spleeterrt
           file spleeterrt-offline
+          # Check that libsamplerate is NOT a dynamic dependency
+          echo "Checking dynamic dependencies:"
+          otool -L spleeterrt-offline
           ./spleeterrt-offline --help 2>&1 || echo "Help displayed (expected without models)"
       
       - name: Package
@@ -125,7 +141,7 @@ jobs:
           path: spleeterrt-macos-v1.5.tar.gz
 
   release:
-    name: Create SpleeterRT Release
+    name: Update SpleeterRT Release
     needs: [build-mac-arm, build-mac-intel]
     runs-on: ubuntu-latest
     permissions:
@@ -142,15 +158,16 @@ jobs:
       
       - run: ls -la ./artifacts/
       
-      - name: Create Release
+      - name: Update main-rt Release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ github.ref_name }}-rt
-          name: SpleeterRT ${{ github.ref_name }}
+          tag_name: main-rt
+          name: SpleeterRT main-rt
           body: |
-            ## SpleeterRT ${{ github.ref_name }}
+            ## SpleeterRT (Static Build)
             
             Ultra-fast 4-stem audio separation (pure C implementation).
+            **Now with static libsamplerate linking - no Homebrew dependencies required!**
             
             ### Features
             - ~1.4x real-time separation speed

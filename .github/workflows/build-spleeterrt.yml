@@ -22,23 +22,28 @@ jobs:
         run: |
           cd spleeterrt
           
-          # Compile all source files
-          clang -O3 -std=c11 -Wall -Wextra \
+          # Get libsamplerate paths from homebrew
+          SAMPLERATE_PREFIX=$(brew --prefix libsamplerate)
+          
+          # Compile all source files with deprecation warning suppression
+          clang -O3 -std=c11 -Wall -Wextra -Wno-deprecated-declarations \
+            -DACCELERATE_NEW_LAPACK \
             -Isrc -Ithird_party/dr_libs -Ithird_party/libsamplerate \
+            -I${SAMPLERATE_PREFIX}/include \
             -c src/spleeterrt_4stems_offline_wiener.c -o spleeterrt_main.o
           
-          clang -O3 -std=c11 -c src/spleeter.c -o spleeter.o -Isrc
-          clang -O3 -std=c11 -c src/stftFix.c -o stftFix.o -Isrc
+          clang -O3 -std=c11 -Wno-deprecated-declarations -DACCELERATE_NEW_LAPACK -c src/spleeter.c -o spleeter.o -Isrc
+          clang -O3 -std=c11 -Wno-deprecated-declarations -DACCELERATE_NEW_LAPACK -c src/stftFix.c -o stftFix.o -Isrc
           clang -O3 -std=c11 -c src/codelet.c -o codelet.o -Isrc
           clang -O3 -std=c11 -c src/cpthread.c -o cpthread.o -Isrc
-          clang -O3 -std=c11 -c src/gemm.c -o gemm.o -Isrc
+          clang -O3 -std=c11 -Wno-deprecated-declarations -DACCELERATE_NEW_LAPACK -c src/gemm.c -o gemm.o -Isrc
           clang -O3 -std=c11 -c src/im2col_dilated.c -o im2col_dilated.o -Isrc
           
-          # Link everything
+          # Link everything with explicit library path
           clang -O3 \
             spleeterrt_main.o spleeter.o stftFix.o codelet.o cpthread.o gemm.o im2col_dilated.o \
             -o spleeterrt-offline \
-            -lsamplerate \
+            -L${SAMPLERATE_PREFIX}/lib -lsamplerate \
             -framework Accelerate \
             -lm -lpthread
           
@@ -48,7 +53,7 @@ jobs:
         run: |
           cd spleeterrt
           file spleeterrt-offline
-          ./spleeterrt-offline --help || echo "Help displayed (expected error without models)"
+          ./spleeterrt-offline --help 2>&1 || echo "Help displayed (expected without models)"
       
       - name: Package
         run: |
@@ -62,7 +67,7 @@ jobs:
 
   build-mac-intel:
     name: Build SpleeterRT for macOS Intel
-    runs-on: macos-13
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -76,23 +81,28 @@ jobs:
         run: |
           cd spleeterrt
           
-          # Compile all source files
-          clang -O3 -std=c11 -Wall -Wextra \
+          # Get libsamplerate paths from homebrew
+          SAMPLERATE_PREFIX=$(brew --prefix libsamplerate)
+          
+          # Compile all source files with deprecation warning suppression
+          clang -O3 -std=c11 -Wall -Wextra -Wno-deprecated-declarations \
+            -DACCELERATE_NEW_LAPACK \
             -Isrc -Ithird_party/dr_libs -Ithird_party/libsamplerate \
+            -I${SAMPLERATE_PREFIX}/include \
             -c src/spleeterrt_4stems_offline_wiener.c -o spleeterrt_main.o
           
-          clang -O3 -std=c11 -c src/spleeter.c -o spleeter.o -Isrc
-          clang -O3 -std=c11 -c src/stftFix.c -o stftFix.o -Isrc
+          clang -O3 -std=c11 -Wno-deprecated-declarations -DACCELERATE_NEW_LAPACK -c src/spleeter.c -o spleeter.o -Isrc
+          clang -O3 -std=c11 -Wno-deprecated-declarations -DACCELERATE_NEW_LAPACK -c src/stftFix.c -o stftFix.o -Isrc
           clang -O3 -std=c11 -c src/codelet.c -o codelet.o -Isrc
           clang -O3 -std=c11 -c src/cpthread.c -o cpthread.o -Isrc
-          clang -O3 -std=c11 -c src/gemm.c -o gemm.o -Isrc
+          clang -O3 -std=c11 -Wno-deprecated-declarations -DACCELERATE_NEW_LAPACK -c src/gemm.c -o gemm.o -Isrc
           clang -O3 -std=c11 -c src/im2col_dilated.c -o im2col_dilated.o -Isrc
           
-          # Link everything
+          # Link everything with explicit library path
           clang -O3 \
             spleeterrt_main.o spleeter.o stftFix.o codelet.o cpthread.o gemm.o im2col_dilated.o \
             -o spleeterrt-offline \
-            -lsamplerate \
+            -L${SAMPLERATE_PREFIX}/lib -lsamplerate \
             -framework Accelerate \
             -lm -lpthread
           
@@ -102,7 +112,7 @@ jobs:
         run: |
           cd spleeterrt
           file spleeterrt-offline
-          ./spleeterrt-offline --help || echo "Help displayed (expected error without models)"
+          ./spleeterrt-offline --help 2>&1 || echo "Help displayed (expected without models)"
       
       - name: Package
         run: |

@@ -26,10 +26,14 @@ jobs:
           source spleeter-cx/python_env/bin/activate
           pip install --upgrade pip
           
-          # Install spleeter and TensorFlow (ARM-compatible)
-          pip install tensorflow==2.15.0
-          pip install spleeter
-          pip install soundfile librosa
+          # Use tensorflow-macos for native ARM support (M1/M2/M3)
+          pip install tensorflow-macos==2.15.1
+          pip install tensorflow-metal  # GPU acceleration for Apple Silicon
+          
+          # Install spleeter with compatible dependencies
+          pip install "numpy<2.0.0"
+          pip install spleeter==2.4.0 --no-deps
+          pip install soundfile librosa ffmpeg-python click httpx typer norbert
           
           deactivate
       
@@ -68,7 +72,7 @@ jobs:
 
   build-mac-intel:
     name: Build Spleeter-CX for macOS Intel
-    runs-on: macos-13
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v4
         with:
@@ -86,10 +90,13 @@ jobs:
           source spleeter-cx/python_env/bin/activate
           pip install --upgrade pip
           
-          # Install spleeter and TensorFlow
+          # Use standard tensorflow for Intel (works via Rosetta on ARM too)
           pip install tensorflow==2.10.1
-          pip install spleeter
-          pip install soundfile librosa
+          
+          # Install spleeter with compatible dependencies
+          pip install "numpy<2.0.0"
+          pip install spleeter==2.4.0 --no-deps
+          pip install soundfile librosa ffmpeg-python click httpx typer norbert
           
           deactivate
       
@@ -146,10 +153,13 @@ jobs:
           .\spleeter-cx\python_env\Scripts\Activate.ps1
           pip install --upgrade pip
           
-          # Install spleeter and TensorFlow
+          # Use standard tensorflow for Windows
           pip install tensorflow==2.10.1
-          pip install spleeter
-          pip install soundfile librosa
+          
+          # Install spleeter with compatible dependencies
+          pip install "numpy<2.0.0"
+          pip install spleeter==2.4.0 --no-deps
+          pip install soundfile librosa ffmpeg-python click httpx typer norbert
           
           deactivate
         shell: pwsh
@@ -227,8 +237,8 @@ jobs:
             ### Downloads
             | Platform | File | Notes |
             |----------|------|-------|
-            | macOS ARM (Apple Silicon) | spleeter-cx-macos-arm-v1.3.tar.gz | Native ARM build |
-            | macOS Intel | spleeter-cx-macos-v1.3.tar.gz | Intel x86_64 |
+            | macOS ARM (Apple Silicon) | spleeter-cx-macos-arm-v1.3.tar.gz | Native ARM build with tensorflow-macos |
+            | macOS Intel | spleeter-cx-macos-v1.3.tar.gz | Intel x86_64 (also works via Rosetta) |
             | Windows | spleeter-cx-win-v1.3.zip | Windows 10/11 |
             
             ### Usage

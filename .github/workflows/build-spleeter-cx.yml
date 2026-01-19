@@ -80,76 +80,6 @@ jobs:
           name: spleeter-cx-macos-arm
           path: spleeter-cx-macos-arm-v1.3.tar.gz
 
-  build-mac-intel:
-    name: Build Spleeter-CX for macOS Intel
-    runs-on: macos-15
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: main
-      
-      - name: Setup Python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      
-      - name: Create Python venv bundle
-        run: |
-          echo "Creating isolated Python environment for spleeter..."
-          python3 -m venv spleeter-cx/python_env
-          source spleeter-cx/python_env/bin/activate
-          pip install --upgrade pip
-          
-          # Pin numpy first
-          pip install "numpy<2.0.0"
-          
-          # Use standard tensorflow for Intel (works via Rosetta on ARM too)
-          pip install tensorflow==2.9.3
-          
-          # Install spleeter's exact requirements
-          pip install "pandas>=1.3.0,<2.0.0"
-          pip install "typer>=0.3.2,<0.4.0"
-          pip install "httpx[http2]>=0.19.0,<0.20.0"
-          pip install norbert soundfile librosa ffmpeg-python click
-          
-          # Now install spleeter without deps
-          pip install spleeter==2.4.0 --no-deps
-          
-          deactivate
-      
-      - name: Copy wrapper scripts
-        run: |
-          cp spleeter_with_progress.py spleeter-cx/
-          
-          # Create wrapper script
-          cat > spleeter-cx/spleeter << 'WRAPPER_EOF'
-          #!/bin/bash
-          SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-          source "$SCRIPT_DIR/python_env/bin/activate"
-          export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
-          export TF_CPP_MIN_LOG_LEVEL=2
-          export LC_ALL=en_US.UTF-8
-          export LANG=en_US.UTF-8
-          python -m spleeter "$@"
-          WRAPPER_EOF
-          chmod +x spleeter-cx/spleeter
-      
-      - name: Verify build
-        run: |
-          source spleeter-cx/python_env/bin/activate
-          python -c "from spleeter.separator import Separator; print('Spleeter OK')"
-          python -c "import tensorflow as tf; print(f'TensorFlow {tf.__version__}')"
-          deactivate
-      
-      - name: Package
-        run: |
-          tar -czf spleeter-cx-macos-v1.3.tar.gz spleeter-cx
-      
-      - uses: actions/upload-artifact@v4
-        with:
-          name: spleeter-cx-macos-intel
-          path: spleeter-cx-macos-v1.3.tar.gz
-
   build-windows:
     name: Build Spleeter-CX for Windows
     runs-on: windows-latest
@@ -173,7 +103,7 @@ jobs:
           # Pin numpy first
           pip install "numpy<2.0.0"
           
-          # Use standard tensorflow for Windows
+          # Use tensorflow 2.9.3 for Windows (Intel)
           pip install tensorflow==2.9.3
           
           # Install spleeter's exact requirements
@@ -223,7 +153,7 @@ jobs:
 
   release:
     name: Create Spleeter-CX Release
-    needs: [build-mac-arm, build-mac-intel, build-windows]
+    needs: [build-mac-arm, build-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -231,10 +161,6 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: spleeter-cx-macos-arm
-          path: ./artifacts
-      - uses: actions/download-artifact@v4
-        with:
-          name: spleeter-cx-macos-intel
           path: ./artifacts
       - uses: actions/download-artifact@v4
         with:
@@ -261,8 +187,7 @@ jobs:
             ### Downloads
             | Platform | File | Notes |
             |----------|------|-------|
-            | macOS ARM (Apple Silicon) | spleeter-cx-macos-arm-v1.3.tar.gz | Native ARM build with tensorflow-macos |
-            | macOS Intel | spleeter-cx-macos-v1.3.tar.gz | Intel x86_64 (also works via Rosetta) |
+            | macOS (Universal) | spleeter-cx-macos-arm-v1.3.tar.gz | Works on both ARM and Intel (via Rosetta) |
             | Windows | spleeter-cx-win-v1.3.zip | Windows 10/11 |
             
             ### Usage
@@ -272,9 +197,10 @@ jobs:
             cd spleeter-cx
             ./spleeter separate -p spleeter:4stems -o output input.mp3
             ```
+            
+            **Note**: The macOS build is native ARM but works on Intel Macs via Rosetta 2.
           files: |
             ./artifacts/spleeter-cx-macos-arm-v1.3.tar.gz
-            ./artifacts/spleeter-cx-macos-v1.3.tar.gz
             ./artifacts/spleeter-cx-win-v1.3.zip
           draft: false
           prerelease: false

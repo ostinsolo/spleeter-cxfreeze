@@ -1,0 +1,246 @@
+name: build-spleeter-cx
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-mac-arm:
+    name: Build Spleeter-CX for macOS ARM (Apple Silicon)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Create Python venv bundle
+        run: |
+          echo "Creating isolated Python environment for spleeter..."
+          python3 -m venv spleeter-cx/python_env
+          source spleeter-cx/python_env/bin/activate
+          pip install --upgrade pip
+          
+          # Install spleeter and TensorFlow (ARM-compatible)
+          pip install tensorflow==2.15.0
+          pip install spleeter
+          pip install soundfile librosa
+          
+          deactivate
+      
+      - name: Copy wrapper scripts
+        run: |
+          cp spleeter_with_progress.py spleeter-cx/
+          
+          # Create wrapper script
+          cat > spleeter-cx/spleeter << 'WRAPPER_EOF'
+          #!/bin/bash
+          SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+          source "$SCRIPT_DIR/python_env/bin/activate"
+          export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+          export TF_CPP_MIN_LOG_LEVEL=2
+          export LC_ALL=en_US.UTF-8
+          export LANG=en_US.UTF-8
+          python -m spleeter "$@"
+          WRAPPER_EOF
+          chmod +x spleeter-cx/spleeter
+      
+      - name: Verify build
+        run: |
+          source spleeter-cx/python_env/bin/activate
+          python -c "from spleeter.separator import Separator; print('Spleeter OK')"
+          python -c "import tensorflow as tf; print(f'TensorFlow {tf.__version__}')"
+          deactivate
+      
+      - name: Package
+        run: |
+          tar -czf spleeter-cx-macos-arm-v1.3.tar.gz spleeter-cx
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spleeter-cx-macos-arm
+          path: spleeter-cx-macos-arm-v1.3.tar.gz
+
+  build-mac-intel:
+    name: Build Spleeter-CX for macOS Intel
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Create Python venv bundle
+        run: |
+          echo "Creating isolated Python environment for spleeter..."
+          python3 -m venv spleeter-cx/python_env
+          source spleeter-cx/python_env/bin/activate
+          pip install --upgrade pip
+          
+          # Install spleeter and TensorFlow
+          pip install tensorflow==2.10.1
+          pip install spleeter
+          pip install soundfile librosa
+          
+          deactivate
+      
+      - name: Copy wrapper scripts
+        run: |
+          cp spleeter_with_progress.py spleeter-cx/
+          
+          # Create wrapper script
+          cat > spleeter-cx/spleeter << 'WRAPPER_EOF'
+          #!/bin/bash
+          SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+          source "$SCRIPT_DIR/python_env/bin/activate"
+          export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+          export TF_CPP_MIN_LOG_LEVEL=2
+          export LC_ALL=en_US.UTF-8
+          export LANG=en_US.UTF-8
+          python -m spleeter "$@"
+          WRAPPER_EOF
+          chmod +x spleeter-cx/spleeter
+      
+      - name: Verify build
+        run: |
+          source spleeter-cx/python_env/bin/activate
+          python -c "from spleeter.separator import Separator; print('Spleeter OK')"
+          python -c "import tensorflow as tf; print(f'TensorFlow {tf.__version__}')"
+          deactivate
+      
+      - name: Package
+        run: |
+          tar -czf spleeter-cx-macos-v1.3.tar.gz spleeter-cx
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spleeter-cx-macos-intel
+          path: spleeter-cx-macos-v1.3.tar.gz
+
+  build-windows:
+    name: Build Spleeter-CX for Windows
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      
+      - name: Setup Python 3.10
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      
+      - name: Create Python venv bundle
+        run: |
+          echo "Creating isolated Python environment for spleeter..."
+          python -m venv spleeter-cx/python_env
+          .\spleeter-cx\python_env\Scripts\Activate.ps1
+          pip install --upgrade pip
+          
+          # Install spleeter and TensorFlow
+          pip install tensorflow==2.10.1
+          pip install spleeter
+          pip install soundfile librosa
+          
+          deactivate
+        shell: pwsh
+      
+      - name: Copy wrapper scripts
+        run: |
+          Copy-Item "spleeter_with_progress.py" -Destination "spleeter-cx/"
+          
+          # Create batch wrapper
+          @"
+          @echo off
+          set SCRIPT_DIR=%~dp0
+          call "%SCRIPT_DIR%python_env\Scripts\activate.bat"
+          set PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+          set TF_CPP_MIN_LOG_LEVEL=2
+          python -m spleeter %*
+          "@ | Out-File -FilePath "spleeter-cx/spleeter.bat" -Encoding ASCII
+        shell: pwsh
+      
+      - name: Verify build
+        run: |
+          .\spleeter-cx\python_env\Scripts\Activate.ps1
+          python -c "from spleeter.separator import Separator; print('Spleeter OK')"
+          python -c "import tensorflow as tf; print(f'TensorFlow {tf.__version__}')"
+          deactivate
+        shell: pwsh
+      
+      - name: Package
+        run: |
+          Compress-Archive -Path "spleeter-cx" -DestinationPath "spleeter-cx-win-v1.3.zip"
+        shell: pwsh
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spleeter-cx-windows
+          path: spleeter-cx-win-v1.3.zip
+
+  release:
+    name: Create Spleeter-CX Release
+    needs: [build-mac-arm, build-mac-intel, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: spleeter-cx-macos-arm
+          path: ./artifacts
+      - uses: actions/download-artifact@v4
+        with:
+          name: spleeter-cx-macos-intel
+          path: ./artifacts
+      - uses: actions/download-artifact@v4
+        with:
+          name: spleeter-cx-windows
+          path: ./artifacts
+      
+      - run: ls -la ./artifacts/
+      
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}-cx
+          name: Spleeter-CX ${{ github.ref_name }}
+          body: |
+            ## Spleeter-CX ${{ github.ref_name }}
+            
+            Python-bundled Spleeter audio separation with TensorFlow.
+            
+            ### Features
+            - 2/4/5 stem separation (including piano)
+            - Self-contained Python environment
+            - Progress reporting for integration
+            
+            ### Downloads
+            | Platform | File | Notes |
+            |----------|------|-------|
+            | macOS ARM (Apple Silicon) | spleeter-cx-macos-arm-v1.3.tar.gz | Native ARM build |
+            | macOS Intel | spleeter-cx-macos-v1.3.tar.gz | Intel x86_64 |
+            | Windows | spleeter-cx-win-v1.3.zip | Windows 10/11 |
+            
+            ### Usage
+            ```bash
+            # Extract and run
+            tar -xzf spleeter-cx-macos-arm-v1.3.tar.gz
+            cd spleeter-cx
+            ./spleeter separate -p spleeter:4stems -o output input.mp3
+            ```
+          files: |
+            ./artifacts/spleeter-cx-macos-arm-v1.3.tar.gz
+            ./artifacts/spleeter-cx-macos-v1.3.tar.gz
+            ./artifacts/spleeter-cx-win-v1.3.zip
+          draft: false
+          prerelease: false

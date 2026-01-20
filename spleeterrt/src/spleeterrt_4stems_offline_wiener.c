@@ -1814,6 +1814,12 @@ double* sumStemMag[4] = { NULL, NULL, NULL, NULL };
         }
 
         framesToWrite = clamp_frames_to_buffer(framesToWrite, finalSize);
+        
+        // Ensure we have enough samples to skip pre-roll and still have framesToWrite
+        if (outLen < FFTSIZE + framesToWrite) {
+            drwav_uint64 available = (outLen > FFTSIZE) ? (outLen - FFTSIZE) : 0;
+            if (available < framesToWrite) framesToWrite = available;
+        }
 
         float* interleaved = (float*)calloc((size_t)framesToWrite * 2, sizeof(float));
         if (!interleaved) {
@@ -1822,9 +1828,11 @@ double* sumStemMag[4] = { NULL, NULL, NULL, NULL };
             free(outR);
             continue;
         }
+        // Skip the FFTSIZE pre-roll padding that was added during STFT
+        // This aligns the output with the original input timing
         for (drwav_uint64 i = 0; i < framesToWrite; ++i) {
-            interleaved[i * 2]     = outL[i];
-            interleaved[i * 2 + 1] = outR[i];
+            interleaved[i * 2]     = outL[FFTSIZE + i];
+            interleaved[i * 2 + 1] = outR[FFTSIZE + i];
         }
 
         char outputPath[2048];

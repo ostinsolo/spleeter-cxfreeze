@@ -140,9 +140,83 @@ jobs:
           name: spleeterrt-macos-intel
           path: spleeterrt-macos-v1.5.tar.gz
 
+  build-windows:
+    name: Build SpleeterRT for Windows
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: MINGW64
+          update: true
+          install: >-
+            mingw-w64-x86_64-gcc
+            mingw-w64-x86_64-make
+            zip
+      
+      - name: Build SpleeterRT
+        run: |
+          cd spleeterrt
+          
+          # Compile all source files
+          # Uses embedded libsamplerate from third_party/ (no external dependency)
+          # Pure C fallback for GEMM (no Accelerate framework on Windows)
+          
+          gcc -O3 -std=c11 -Wall -Wextra \
+            -Isrc -Ithird_party/dr_libs -Ithird_party/libsamplerate \
+            -c src/spleeterrt_4stems_offline_wiener.c -o spleeterrt_main.o
+          
+          gcc -O3 -std=c11 -c src/spleeter.c -o spleeter.o -Isrc
+          gcc -O3 -std=c11 -c src/stftFix.c -o stftFix.o -Isrc
+          gcc -O3 -std=c11 -c src/codelet.c -o codelet.o -Isrc
+          gcc -O3 -std=c11 -c src/cpthread.c -o cpthread.o -Isrc
+          gcc -O3 -std=c11 -fopenmp -c src/gemm.c -o gemm.o -Isrc
+          gcc -O3 -std=c11 -c src/im2col_dilated.c -o im2col_dilated.o -Isrc
+          
+          # Compile embedded libsamplerate
+          gcc -O3 -std=c11 -Ithird_party/libsamplerate \
+            -c third_party/libsamplerate/samplerate.c -o samplerate.o
+          gcc -O3 -std=c11 -Ithird_party/libsamplerate \
+            -c third_party/libsamplerate/src_sinc.c -o src_sinc.o
+          
+          # Link everything statically (no runtime dependencies)
+          gcc -O3 -static \
+            spleeterrt_main.o spleeter.o stftFix.o codelet.o cpthread.o gemm.o im2col_dilated.o \
+            samplerate.o src_sinc.o \
+            -o spleeterrt-offline.exe \
+            -lm -fopenmp
+          
+          ls -la spleeterrt-offline.exe
+      
+      - name: Verify build
+        shell: pwsh
+        run: |
+          cd spleeterrt
+          Write-Host "File info:"
+          Get-Item spleeterrt-offline.exe | Select-Object Name, Length
+          Write-Host "Running help:"
+          .\spleeterrt-offline.exe --help 2>&1 | Out-Host
+          Write-Host "Build verification complete"
+      
+      - name: Package
+        run: |
+          cd spleeterrt
+          zip -j ../spleeterrt-win-v1.5.zip spleeterrt-offline.exe
+      
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spleeterrt-windows
+          path: spleeterrt-win-v1.5.zip
+
   release:
-    name: Update SpleeterRT Release
-    needs: [build-mac-arm, build-mac-intel]
+    name: Create SpleeterRT Release
+    needs: [build-mac-arm, build-mac-intel, build-windows]
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -154,6 +228,10 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: spleeterrt-macos-intel
+          path: ./artifacts
+      - uses: actions/download-artifact@v4
+        with:
+          name: spleeterrt-windows
           path: ./artifacts
       
       - run: ls -la ./artifacts/
@@ -167,7 +245,8 @@ jobs:
             ## SpleeterRT (Static Build)
             
             Ultra-fast 4-stem audio separation (pure C implementation).
-            **Now with static libsamplerate linking - no Homebrew dependencies required!**
+            Now with **Windows support**! 🎉
+            **Static libsamplerate linking - no Homebrew dependencies required!**
             
             ### Features
             - ~1.4x real-time separation speed
@@ -181,17 +260,25 @@ jobs:
             |----------|------|-------|
             | macOS ARM (Apple Silicon) | spleeterrt-macos-arm-v1.5.tar.gz | Native ARM build |
             | macOS Intel | spleeterrt-macos-v1.5.tar.gz | Intel x86_64 |
+            | **Windows** | **spleeterrt-win-v1.5.zip** | **Windows 10/11 x64** |
             
             ### Models (separate download)
             Download models from the main release: `spleeterrt-models-v1.5.tar.gz`
             
-            ### Usage
+            ### Usage (macOS)
             ```bash
             tar -xzf spleeterrt-macos-arm-v1.5.tar.gz
             ./spleeterrt-offline input.wav output_dir/
             ```
+            
+            ### Usage (Windows)
+            ```cmd
+            :: Extract spleeterrt-win-v1.5.zip
+            spleeterrt-offline.exe input.wav output_dir\
+            ```
           files: |
             ./artifacts/spleeterrt-macos-arm-v1.5.tar.gz
             ./artifacts/spleeterrt-macos-v1.5.tar.gz
+            ./artifacts/spleeterrt-win-v1.5.zip
           draft: false
           prerelease: false

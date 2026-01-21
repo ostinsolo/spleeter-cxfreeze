@@ -57,13 +57,16 @@ void gemm_tt(int M, int N, int K, float ALPHA, float *A, int lda, float *B, int 
 		}
 	}
 }
-#define MKL
-#ifdef MKL
+// Use Apple Accelerate framework on macOS for optimized BLAS
+// Fall back to pure C implementation on other platforms (Windows/Linux)
+#if defined(__APPLE__)
+#define USE_ACCELERATE
 #include <Accelerate/Accelerate.h>
 #endif
 void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA, float *A, int lda, float *B, int ldb, float BETA, float *C, int ldc)
 {
-#ifdef MKL
+#ifdef USE_ACCELERATE
+	// Use Apple's optimized CBLAS on macOS
 	if (!TA && !TB)
 		cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, ALPHA, A, lda, B, ldb, BETA, C, ldc);
 	else if (TA && !TB)
@@ -73,6 +76,7 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA, float *A, int ld
 	else
 		cblas_sgemm(CblasRowMajor, CblasTrans, CblasTrans, M, N, K, ALPHA, A, lda, B, ldb, BETA, C, ldc);
 #else
+	// Pure C fallback for Windows/Linux
 	for (int i = 0; i < N * M; ++i)
 		C[i] *= BETA;
 	if (!TA && !TB)

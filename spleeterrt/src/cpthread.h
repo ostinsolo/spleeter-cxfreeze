@@ -1,8 +1,14 @@
 #ifndef __CPTHREAD_H__
 #define __CPTHREAD_H__
-#ifdef _WIN32
+
+// MinGW/MSYS2 has native pthreads support, so use system pthreads
+#if defined(__MINGW32__) || defined(__MINGW64__)
+#include <pthread.h>
+#elif defined(_WIN32)
+// Pure Windows (MSVC) - use custom pthread implementation
 #include <stdbool.h>
 #include <windows.h>
+#include <time.h>  // For struct timespec
 typedef void pthread_attr_t;
 typedef CRITICAL_SECTION pthread_mutex_t;
 typedef void pthread_mutexattr_t;
@@ -15,7 +21,7 @@ typedef struct
 	SRWLOCK lock;
 	bool    exclusive;
 } pthread_rwlock_t;
-int pthread_create(pthread_t *thread, pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
+int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg);
 void pthread_exit(void *value_ptr);
 int pthread_join(pthread_t thread, void **value_ptr);
 int pthread_detach(pthread_t);
@@ -40,6 +46,7 @@ int pthread_rwlock_wrlock(pthread_rwlock_t *rwlock);
 int pthread_rwlock_trywrlock(pthread_rwlock_t  *rwlock);
 int pthread_rwlock_unlock(pthread_rwlock_t *rwlock);
 #else
+// POSIX (macOS, Linux) - use system pthreads
 #include <pthread.h>
 #endif
 #endif /* __CPTHREAD_H__ */

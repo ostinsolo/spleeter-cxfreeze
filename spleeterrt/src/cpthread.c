@@ -1,6 +1,9 @@
 #include "cpthread.h"
 #include <time.h>
-#ifdef _WIN32
+
+// Only compile custom pthread implementation for pure Windows (MSVC)
+// MinGW/MSYS2 has native pthreads support
+#if defined(_WIN32) && !defined(__MINGW32__) && !defined(__MINGW64__)
 // Create thread
 int pthread_create(pthread_t *thread, const pthread_attr_t *attr, void *(*start_routine)(void *), void *arg)
 {

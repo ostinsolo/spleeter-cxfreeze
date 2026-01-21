@@ -1,12 +1,19 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#define _USE_MATH_DEFINES  // For M_PI on Windows
 #include <math.h>
 #include <time.h>
 #include <errno.h>
 #include <ctype.h>
 #include <errno.h>
 #include <limits.h>
+
+// Define M_PI if not available (Windows compatibility)
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
+
 #ifdef _WIN32
 #include <direct.h>
 #define MKDIR(path) _mkdir(path)

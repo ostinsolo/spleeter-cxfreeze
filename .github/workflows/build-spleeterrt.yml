@@ -229,8 +229,8 @@ jobs:
           cd spleeterrt
           # Include exe and all required DLLs in the zip
           zip -j ../spleeterrt-win-v1.5.zip spleeterrt-offline.exe libopenblas.dll libgomp-1.dll libwinpthread-1.dll
-          echo "Package contents:"
-          unzip -l ../spleeterrt-win-v1.5.zip
+          echo "Package created successfully!"
+          ls -la ../spleeterrt-win-v1.5.zip
       
       - uses: actions/upload-artifact@v4
         with:

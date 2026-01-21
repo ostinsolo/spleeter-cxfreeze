@@ -218,6 +218,7 @@ jobs:
           Write-Host $output
           if ($output -match "SpleeterRT") {
             Write-Host "Build verification PASSED - SpleeterRT executable works!"
+            exit 0
           } else {
             Write-Host "Build verification FAILED - executable not working"
             exit 1

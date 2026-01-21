@@ -57,16 +57,28 @@ void gemm_tt(int M, int N, int K, float ALPHA, float *A, int lda, float *B, int 
 		}
 	}
 }
-// Use Apple Accelerate framework on macOS for optimized BLAS
-// Fall back to pure C implementation on other platforms (Windows/Linux)
+// Platform-specific BLAS acceleration:
+// - macOS: Apple Accelerate framework
+// - Windows: OpenBLAS (if USE_OPENBLAS defined) or pure C fallback
+// - Linux: OpenBLAS (if USE_OPENBLAS defined) or pure C fallback
+
 #if defined(__APPLE__)
 #define USE_ACCELERATE
 #include <Accelerate/Accelerate.h>
+#elif defined(USE_OPENBLAS)
+// OpenBLAS header location varies by system
+// MSYS2/MinGW: openblas/cblas.h, Linux: cblas.h or openblas/cblas.h
+#if defined(__MINGW32__) || defined(__MINGW64__)
+#include <openblas/cblas.h>
+#else
+#include <cblas.h>
 #endif
+#endif
+
 void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA, float *A, int lda, float *B, int ldb, float BETA, float *C, int ldc)
 {
-#ifdef USE_ACCELERATE
-	// Use Apple's optimized CBLAS on macOS
+#if defined(USE_ACCELERATE) || defined(USE_OPENBLAS)
+	// Use optimized CBLAS (Accelerate on macOS, OpenBLAS on Windows/Linux)
 	if (!TA && !TB)
 		cblas_sgemm(CblasRowMajor, CblasNoTrans, CblasNoTrans, M, N, K, ALPHA, A, lda, B, ldb, BETA, C, ldc);
 	else if (TA && !TB)
@@ -76,7 +88,7 @@ void gemm_cpu(int TA, int TB, int M, int N, int K, float ALPHA, float *A, int ld
 	else
 		cblas_sgemm(CblasRowMajor, CblasTrans, CblasTrans, M, N, K, ALPHA, A, lda, B, ldb, BETA, C, ldc);
 #else
-	// Pure C fallback for Windows/Linux
+	// Pure C fallback with OpenMP parallelization
 	for (int i = 0; i < N * M; ++i)
 		C[i] *= BETA;
 	if (!TA && !TB)

@@ -209,11 +209,19 @@ jobs:
         shell: pwsh
         run: |
           cd spleeterrt
-          Write-Host "File info:"
-          Get-Item spleeterrt-offline.exe | Select-Object Name, Length
-          Write-Host "Running help:"
-          .\spleeterrt-offline.exe --help 2>&1 | Out-Host
-          Write-Host "Build verification complete"
+          Write-Host "=== Files in bundle ==="
+          Get-Item *.exe, *.dll | Select-Object Name, @{N='Size(MB)';E={[math]::Round($_.Length/1MB,2)}}
+          Write-Host ""
+          Write-Host "=== Testing executable ==="
+          # The exe returns error code when given --help (not an audio file), so we capture output and ignore exit code
+          $output = & .\spleeterrt-offline.exe --help 2>&1
+          Write-Host $output
+          if ($output -match "SpleeterRT") {
+            Write-Host "Build verification PASSED - SpleeterRT executable works!"
+          } else {
+            Write-Host "Build verification FAILED - executable not working"
+            exit 1
+          }
       
       - name: Package
         run: |

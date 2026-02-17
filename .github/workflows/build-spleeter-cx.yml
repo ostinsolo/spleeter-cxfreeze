@@ -66,12 +66,12 @@ jobs:
 
       - name: Package
         run: |
-          tar -czf spleeter-cx-macos-arm-v1.3.tar.gz spleeter-cx
+          tar -czf spleeter-cx-macos-arm-${{ github.ref_name }}.tar.gz spleeter-cx
 
       - uses: actions/upload-artifact@v4
         with:
           name: spleeter-cx-macos-arm
-          path: spleeter-cx-macos-arm-v1.3.tar.gz
+          path: spleeter-cx-macos-arm-${{ github.ref_name }}.tar.gz
 
   build-windows:
     name: Build Spleeter-CX for Windows
@@ -90,7 +90,7 @@ jobs:
           New-Item -ItemType Directory -Path spleeter-cx -Force
           tar -xzf py.tar.gz -C spleeter-cx
           $dir = Get-ChildItem spleeter-cx -Directory | Select-Object -First 1
-          Rename-Item $dir.FullName (Join-Path spleeter-cx "python_env")
+          Rename-Item -LiteralPath $dir.FullName -NewName "python_env"
         shell: pwsh
 
       - name: Install pip and Spleeter into bundled Python
@@ -132,13 +132,13 @@ jobs:
 
       - name: Package
         run: |
-          Compress-Archive -Path "spleeter-cx" -DestinationPath "spleeter-cx-win-v1.3.zip"
+          Compress-Archive -Path "spleeter-cx" -DestinationPath "spleeter-cx-win-${{ github.ref_name }}.zip"
         shell: pwsh
 
       - uses: actions/upload-artifact@v4
         with:
           name: spleeter-cx-windows
-          path: spleeter-cx-win-v1.3.zip
+          path: spleeter-cx-win-${{ github.ref_name }}.zip
 
   release:
     name: Create Spleeter-CX Release
@@ -177,17 +177,17 @@ jobs:
             ### Downloads
             | Platform | File | Notes |
             |----------|------|-------|
-            | macOS (ARM) | spleeter-cx-macos-arm-v1.3.tar.gz | Works on Intel via Rosetta |
-            | Windows | spleeter-cx-win-v1.3.zip | Windows 10/11 |
+            | macOS (ARM) | spleeter-cx-macos-arm-${{ github.ref_name }}.tar.gz | Works on Intel via Rosetta |
+            | Windows | spleeter-cx-win-${{ github.ref_name }}.zip | Windows 10/11 |
 
             ### Usage
             ```bash
-            tar -xzf spleeter-cx-macos-arm-v1.3.tar.gz
+            tar -xzf spleeter-cx-macos-arm-${{ github.ref_name }}.tar.gz
             cd spleeter-cx
             ./spleeter separate -p spleeter:4stems -o output input.mp3
             ```
           files: |
-            ./artifacts/spleeter-cx-macos-arm-v1.3.tar.gz
-            ./artifacts/spleeter-cx-win-v1.3.zip
+            ./artifacts/spleeter-cx-macos-arm-${{ github.ref_name }}.tar.gz
+            ./artifacts/spleeter-cx-win-${{ github.ref_name }}.zip
           draft: false
           prerelease: false

@@ -10,7 +10,7 @@ This repository provides **two implementations** of Spleeter, each optimized for
 **Best for: Piano separation, maximum flexibility**
 
 - ✅ 2/4/5 stems (including piano separation)
-- ✅ Bundled Python + TensorFlow (no installation required)
+- ✅ **Python is shipped in the bundle** – no system Python or installation required
 - ✅ Progress reporting during separation
 - ✅ ~3.6x real-time speed
 - 📦 Size: 630 MB (compressed: 456 MB)
@@ -47,8 +47,10 @@ This repository provides **two implementations** of Spleeter, each optimized for
 
 ### Option 1: Spleeter-CX (Python - with Piano)
 
+**No need to install Python** – it's included in the download. Extract and run:
+
 ```bash
-# Download and extract
+# Download and extract (Python is inside the bundle)
 curl -L https://github.com/ostinsolo/spleeter-cxfreeze/releases/download/v1.3-unified/spleeter-cx-macos-v1.3.tar.gz | tar -xz
 cd spleeter-cx
 
@@ -89,7 +91,7 @@ cd ~/Documents/Max\ 9/SplitWizard/ThirdPartyApps/spleeterrt
 | **Piano** | ✅ Yes (5-stem) | ❌ No |
 | **Quality** | Good | Good |
 | **Size** | 630 MB | 150 MB |
-| **Dependencies** | Bundled Python | None (system frameworks) |
+| **Dependencies** | Python shipped in bundle (no system Python) | None (system frameworks) |
 | **Formats** | WAV, MP3, FLAC, OGG | WAV, MP3, FLAC |
 | **Progress** | ✅ Detailed | ❌ Basic |
 | **Memory** | ~800 MB | ~600 MB |
@@ -114,13 +116,15 @@ cd ~/Documents/Max\ 9/SplitWizard/ThirdPartyApps/spleeterrt
 
 ### Spleeter-CX (Python Bundle)
 
+**Python is included in the release** – the `python_env/` folder contains a full, portable Python 3.10 (from [python-build-standalone](https://github.com/astral-sh/python-build-standalone)), so you do not need Python installed on your system.
+
 **Directory Structure:**
 ```
 spleeter-cx/
-├── spleeter                 # Wrapper script
+├── spleeter                 # Wrapper script (uses bundled Python only)
 ├── spleeter_with_progress.py
-├── python_env/              # Bundled Python 3.10 + dependencies
-│   ├── bin/python
+├── python_env/              # Shipped Python 3.10 + TensorFlow + Spleeter (portable)
+│   ├── bin/python3
 │   └── lib/python3.10/
 │       └── site-packages/
 │           ├── spleeter/
@@ -133,10 +137,11 @@ spleeter-cx/
 ```
 
 **System Requirements:**
-- macOS 10.13+
+- macOS 10.13+ (or Windows 10/11 for the Windows build)
 - ~800 MB RAM
 - 630 MB disk space
 - FFmpeg (bundled or system)
+- **No system Python required**
 
 ### SpleeterRT (C Implementation)
 
@@ -291,17 +296,17 @@ libc++abi: terminating due to uncaught exception
 
 ### The Solution: Bundled Python
 
-Instead of "freezing" Python into a single executable, we **bundle a minimal Python environment**:
+Instead of "freezing" Python into a single executable, we **ship a portable Python** in every release (from [python-build-standalone](https://github.com/astral-sh/python-build-standalone)):
 
 ```
 spleeter-cx/
-├── python_env/          ← Complete Python 3.10 venv
-│   ├── bin/python       ← Python interpreter
-│   └── lib/...          ← All dependencies
-└── spleeter             ← Wrapper script
+├── python_env/          ← Full Python 3.10 (shipped in the tarball/zip)
+│   ├── bin/python3      ← Portable interpreter (no symlinks to system)
+│   └── lib/...         ← All dependencies
+└── spleeter             ← Wrapper script (calls bundled Python only)
 ```
 
-The wrapper simply activates the venv and runs Spleeter - **no freezing, no conflicts**.
+The wrapper runs only the bundled Python – **no system Python required, no freezing, no conflicts**.
 
 ### Advantages
 

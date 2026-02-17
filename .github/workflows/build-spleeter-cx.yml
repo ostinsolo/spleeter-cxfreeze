@@ -13,68 +13,61 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
-      
-      - name: Setup Python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      
-      - name: Create Python venv bundle
+
+      - name: Download portable Python (macOS ARM)
         run: |
-          echo "Creating isolated Python environment for spleeter..."
-          python3 -m venv spleeter-cx/python_env
-          source spleeter-cx/python_env/bin/activate
-          pip install --upgrade pip
-          
-          # Pin numpy first (required before TF)
-          pip install "numpy<2.0.0"
-          
-          # Install tensorflow-macos 2.9 (compatible with spleeter's requirement of <2.10)
-          # This is the native ARM build for Apple Silicon
-          pip install tensorflow-macos==2.9.2
-          
-          # Install spleeter's exact requirements (from spleeter 2.4.0 setup.py)
-          pip install "pandas>=1.3.0,<2.0.0"
-          pip install "typer>=0.3.2,<0.4.0"
-          pip install "httpx[http2]>=0.19.0,<0.20.0"
-          pip install norbert soundfile librosa ffmpeg-python click
-          
-          # Now install spleeter without deps (we've satisfied them all)
-          pip install spleeter==2.4.0 --no-deps
-          
-          # Verify TensorFlow is available
-          python -c "import tensorflow; print(f'TensorFlow installed: {tensorflow.__version__}')"
-          
-          deactivate
-      
+          # python-build-standalone: self-contained, no symlinks to build machine
+          PBS_RELEASE="20260211"
+          PBS_FILE="cpython-3.10.19+${PBS_RELEASE}-aarch64-apple-darwin-install_only_stripped.tar.gz"
+          curl -sSL "https://github.com/astral-sh/python-build-standalone/releases/download/${PBS_RELEASE}/${PBS_FILE}" -o /tmp/py.tar.gz
+          mkdir -p spleeter-cx
+          tar -xzf /tmp/py.tar.gz -C spleeter-cx
+          # Archive extracts as single top-level dir (e.g. "python" or "cpython-...")
+          MOVABLE=$(find spleeter-cx -maxdepth 1 -mindepth 1 -type d | head -1)
+          mv "$MOVABLE" spleeter-cx/python_env
+
+      - name: Install pip and Spleeter into bundled Python
+        run: |
+          ./spleeter-cx/python_env/bin/python3 -m ensurepip --upgrade
+          ./spleeter-cx/python_env/bin/pip install --upgrade pip
+          ./spleeter-cx/python_env/bin/pip install "numpy<2.0.0"
+          ./spleeter-cx/python_env/bin/pip install tensorflow-macos==2.9.2
+          ./spleeter-cx/python_env/bin/pip install "pandas>=1.3.0,<2.0.0"
+          ./spleeter-cx/python_env/bin/pip install "typer>=0.3.2,<0.4.0"
+          ./spleeter-cx/python_env/bin/pip install "httpx[http2]>=0.19.0,<0.20.0"
+          ./spleeter-cx/python_env/bin/pip install norbert soundfile librosa ffmpeg-python click
+          ./spleeter-cx/python_env/bin/pip install spleeter==2.4.0 --no-deps
+          ./spleeter-cx/python_env/bin/python3 -c "import tensorflow; print('TensorFlow', tensorflow.__version__)"
+
       - name: Copy wrapper scripts
         run: |
           cp spleeter_with_progress.py spleeter-cx/
-          
-          # Create wrapper script
-          cat > spleeter-cx/spleeter << 'WRAPPER_EOF'
-          #!/bin/bash
-          SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-          source "$SCRIPT_DIR/python_env/bin/activate"
-          export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
-          export TF_CPP_MIN_LOG_LEVEL=2
-          export LC_ALL=en_US.UTF-8
-          export LANG=en_US.UTF-8
-          python -m spleeter "$@"
-          WRAPPER_EOF
+          # Wrapper uses BUNDLED Python only (no system Python)
+          printf '%s\n' \
+            '#!/bin/bash' \
+            'SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"' \
+            'PYTHON="$SCRIPT_DIR/python_env/bin/python3"' \
+            'if [ ! -x "$PYTHON" ]; then' \
+            '  echo "Error: Bundled Python not found at $PYTHON" >&2' \
+            '  exit 1' \
+            'fi' \
+            'export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python' \
+            'export TF_CPP_MIN_LOG_LEVEL=2' \
+            'export LC_ALL=en_US.UTF-8' \
+            'export LANG=en_US.UTF-8' \
+            'exec "$PYTHON" -m spleeter "$@"' \
+            > spleeter-cx/spleeter
           chmod +x spleeter-cx/spleeter
-      
+
       - name: Verify build
         run: |
-          source spleeter-cx/python_env/bin/activate
-          python -c "from spleeter.separator import Separator; print('Spleeter OK')"
-          python -c "import tensorflow as tf; print(f'TensorFlow {tf.__version__}')"
-          deactivate
-      
+          ./spleeter-cx/python_env/bin/python3 -c "from spleeter.separator import Separator; print('Spleeter OK')"
+          ./spleeter-cx/spleeter --help
+
       - name: Package
         run: |
           tar -czf spleeter-cx-macos-arm-v1.3.tar.gz spleeter-cx
-      
+
       - uses: actions/upload-artifact@v4
         with:
           name: spleeter-cx-macos-arm
@@ -87,65 +80,61 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: main
-      
-      - name: Setup Python 3.10
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.10'
-      
-      - name: Create Python venv bundle
+
+      - name: Download portable Python (Windows x64)
         run: |
-          echo "Creating isolated Python environment for spleeter..."
-          python -m venv spleeter-cx/python_env
-          .\spleeter-cx\python_env\Scripts\Activate.ps1
-          pip install --upgrade pip
-          
-          # Pin numpy first
-          pip install "numpy<2.0.0"
-          
-          # Use tensorflow 2.9.3 for Windows (Intel)
-          pip install tensorflow==2.9.3
-          
-          # Install spleeter's exact requirements
-          pip install "pandas>=1.3.0,<2.0.0"
-          pip install "typer>=0.3.2,<0.4.0"
-          pip install "httpx[http2]>=0.19.0,<0.20.0"
-          pip install norbert soundfile librosa ffmpeg-python click
-          
-          # Now install spleeter without deps
-          pip install spleeter==2.4.0 --no-deps
-          
-          deactivate
+          $PBS_RELEASE = "20260211"
+          $PBS_FILE = "cpython-3.10.19+${PBS_RELEASE}-x86_64-pc-windows-msvc-install_only_stripped.tar.gz"
+          $url = "https://github.com/astral-sh/python-build-standalone/releases/download/${PBS_RELEASE}/${PBS_FILE}"
+          Invoke-WebRequest -Uri $url -OutFile py.tar.gz -UseBasicParsing
+          New-Item -ItemType Directory -Path spleeter-cx -Force
+          tar -xzf py.tar.gz -C spleeter-cx
+          $dir = Get-ChildItem spleeter-cx -Directory | Select-Object -First 1
+          Rename-Item $dir.FullName (Join-Path spleeter-cx "python_env")
         shell: pwsh
-      
+
+      - name: Install pip and Spleeter into bundled Python
+        run: |
+          & ".\spleeter-cx\python_env\python.exe" -m ensurepip --upgrade
+          & ".\spleeter-cx\python_env\python.exe" -m pip install --upgrade pip
+          & ".\spleeter-cx\python_env\python.exe" -m pip install "numpy<2.0.0"
+          & ".\spleeter-cx\python_env\python.exe" -m pip install tensorflow==2.9.3
+          & ".\spleeter-cx\python_env\python.exe" -m pip install "pandas>=1.3.0,<2.0.0"
+          & ".\spleeter-cx\python_env\python.exe" -m pip install "typer>=0.3.2,<0.4.0"
+          & ".\spleeter-cx\python_env\python.exe" -m pip install "httpx[http2]>=0.19.0,<0.20.0"
+          & ".\spleeter-cx\python_env\python.exe" -m pip install norbert soundfile librosa ffmpeg-python click
+          & ".\spleeter-cx\python_env\python.exe" -m pip install spleeter==2.4.0 --no-deps
+        shell: pwsh
+
       - name: Copy wrapper scripts
         run: |
           Copy-Item "spleeter_with_progress.py" -Destination "spleeter-cx/"
-          
-          # Create batch wrapper
-          @"
+          $bat = @"
           @echo off
           set SCRIPT_DIR=%~dp0
-          call "%SCRIPT_DIR%python_env\Scripts\activate.bat"
+          set PYTHON=%SCRIPT_DIR%python_env\python.exe
+          if not exist "%PYTHON%" (
+            echo Error: Bundled Python not found at %PYTHON%
+            exit /b 1
+          )
           set PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
           set TF_CPP_MIN_LOG_LEVEL=2
-          python -m spleeter %*
-          "@ | Out-File -FilePath "spleeter-cx/spleeter.bat" -Encoding ASCII
+          "%PYTHON%" -m spleeter %*
+          "@
+          $bat | Out-File -FilePath "spleeter-cx/spleeter.bat" -Encoding ASCII
         shell: pwsh
-      
+
       - name: Verify build
         run: |
-          .\spleeter-cx\python_env\Scripts\Activate.ps1
-          python -c "from spleeter.separator import Separator; print('Spleeter OK')"
-          python -c "import tensorflow as tf; print(f'TensorFlow {tf.__version__}')"
-          deactivate
+          & ".\spleeter-cx\python_env\python.exe" -c "from spleeter.separator import Separator; print('Spleeter OK')"
+          & ".\spleeter-cx\spleeter.bat" --help
         shell: pwsh
-      
+
       - name: Package
         run: |
           Compress-Archive -Path "spleeter-cx" -DestinationPath "spleeter-cx-win-v1.3.zip"
         shell: pwsh
-      
+
       - uses: actions/upload-artifact@v4
         with:
           name: spleeter-cx-windows
@@ -166,9 +155,9 @@ jobs:
         with:
           name: spleeter-cx-windows
           path: ./artifacts
-      
+
       - run: ls -la ./artifacts/
-      
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -176,29 +165,27 @@ jobs:
           name: Spleeter-CX ${{ github.ref_name }}
           body: |
             ## Spleeter-CX ${{ github.ref_name }}
-            
+
             Python-bundled Spleeter audio separation with TensorFlow.
-            
+            **No global Python required** – Python is included in the bundle.
+
             ### Features
             - 2/4/5 stem separation (including piano)
-            - Self-contained Python environment
+            - Self-contained Python environment (portable)
             - Progress reporting for integration
-            
+
             ### Downloads
             | Platform | File | Notes |
             |----------|------|-------|
-            | macOS (Universal) | spleeter-cx-macos-arm-v1.3.tar.gz | Works on both ARM and Intel (via Rosetta) |
+            | macOS (ARM) | spleeter-cx-macos-arm-v1.3.tar.gz | Works on Intel via Rosetta |
             | Windows | spleeter-cx-win-v1.3.zip | Windows 10/11 |
-            
+
             ### Usage
             ```bash
-            # Extract and run
             tar -xzf spleeter-cx-macos-arm-v1.3.tar.gz
             cd spleeter-cx
             ./spleeter separate -p spleeter:4stems -o output input.mp3
             ```
-            
-            **Note**: The macOS build is native ARM but works on Intel Macs via Rosetta 2.
           files: |
             ./artifacts/spleeter-cx-macos-arm-v1.3.tar.gz
             ./artifacts/spleeter-cx-win-v1.3.zip

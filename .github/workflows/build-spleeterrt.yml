@@ -158,6 +158,7 @@ jobs:
           install: >-
             mingw-w64-x86_64-gcc
             mingw-w64-x86_64-make
+            mingw-w64-x86_64-ntldd
             zip
       
       - name: Install OpenBLAS
@@ -197,12 +198,19 @@ jobs:
           
           ls -la spleeterrt-offline.exe
           
-          # Copy required DLLs for distribution
-          cp /mingw64/bin/libopenblas.dll .
-          cp /mingw64/bin/libgomp-1.dll .
-          cp /mingw64/bin/libwinpthread-1.dll .
-          cp /mingw64/bin/libgcc_s_seh-1.dll .
-          cp /mingw64/bin/libgfortran-5.dll .
+          # Auto-copy ALL required non-system DLLs using ntldd recursive dependency resolution.
+          # This is future-proof: if OpenBLAS or GCC adds new transitive deps in a future MSYS2
+          # update, they will be bundled automatically without touching this workflow.
+          # Previously missing: libgcc_s_seh-1.dll, libgfortran-5.dll, libquadmath-0.dll
+          echo "Resolving runtime DLL dependencies with ntldd..."
+          ntldd -R spleeterrt-offline.exe \
+            | grep -i "mingw64" \
+            | awk '{print $3}' \
+            | sort -u \
+            | while read dll; do
+                echo "  Bundling: $(basename $dll)"
+                cp "$dll" .
+              done
           
           echo "Bundle contents:"
           ls -la *.exe *.dll
@@ -227,16 +235,12 @@ jobs:
       - name: Package
         run: |
           cd spleeterrt
-          # Include exe and all required DLLs in the zip
-          zip -j ../spleeterrt-win-v1.5.zip \
-            spleeterrt-offline.exe \
-            libopenblas.dll \
-            libgomp-1.dll \
-            libwinpthread-1.dll \
-            libgcc_s_seh-1.dll \
-            libgfortran-5.dll
+          # Glob *.dll so all DLLs discovered by ntldd are included automatically
+          zip -j ../spleeterrt-win-v1.5.zip spleeterrt-offline.exe *.dll
           echo "Package created successfully!"
           ls -la ../spleeterrt-win-v1.5.zip
+          echo "Files in zip:"
+          unzip -l ../spleeterrt-win-v1.5.zip
       
       - uses: actions/upload-artifact@v4
         with:

@@ -201,34 +201,40 @@ jobs:
           cp /mingw64/bin/libopenblas.dll .
           cp /mingw64/bin/libgomp-1.dll .
           cp /mingw64/bin/libwinpthread-1.dll .
+          cp /mingw64/bin/libgcc_s_seh-1.dll .
+          cp /mingw64/bin/libgfortran-5.dll .
           
           echo "Bundle contents:"
           ls -la *.exe *.dll
       
-      - name: Verify build
-        shell: pwsh
+      - name: Verify build (clean CMD — no MSYS2 on PATH)
+        shell: cmd
         run: |
           cd spleeterrt
-          Write-Host "=== Files in bundle ==="
-          Get-Item *.exe, *.dll | Select-Object Name, @{N='Size(MB)';E={[math]::Round($_.Length/1MB,2)}}
-          Write-Host ""
-          Write-Host "=== Testing executable ==="
-          # The exe returns error code when given --help (not an audio file), so we capture output and ignore exit code
-          $output = & .\spleeterrt-offline.exe --help 2>&1
-          Write-Host $output
-          if ($output -match "SpleeterRT") {
-            Write-Host "Build verification PASSED - SpleeterRT executable works!"
-            exit 0
-          } else {
-            Write-Host "Build verification FAILED - executable not working"
-            exit 1
-          }
+          echo === Bundle contents ===
+          dir /b *.exe *.dll
+          echo.
+          echo === Running exe with clean PATH (simulates end-user machine) ===
+          set PATH=C:\Windows\System32;C:\Windows
+          spleeterrt-offline.exe --help 2>&1
+          echo Exit code: %ERRORLEVEL%
+          if %ERRORLEVEL% == -1073741515 (
+            echo FAIL: STATUS_DLL_NOT_FOUND - a required DLL is missing from the bundle
+            exit /b 1
+          )
+          echo PASS: exe loaded successfully
       
       - name: Package
         run: |
           cd spleeterrt
           # Include exe and all required DLLs in the zip
-          zip -j ../spleeterrt-win-v1.5.zip spleeterrt-offline.exe libopenblas.dll libgomp-1.dll libwinpthread-1.dll
+          zip -j ../spleeterrt-win-v1.5.zip \
+            spleeterrt-offline.exe \
+            libopenblas.dll \
+            libgomp-1.dll \
+            libwinpthread-1.dll \
+            libgcc_s_seh-1.dll \
+            libgfortran-5.dll
           echo "Package created successfully!"
           ls -la ../spleeterrt-win-v1.5.zip
       
